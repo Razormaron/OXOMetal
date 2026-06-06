@@ -68,7 +68,7 @@ final class GameView: MTKView {
         }
     }
 
-    // MARK: Hit testing
+    // MARK: Hit testing — grid
 
     // Grid spans (170,170)–(530,530) in game coordinates; cells are 120×120.
     private let gridX:  Float = 170
@@ -81,4 +81,5 @@ final class GameView: MTKView {
         guard (0..<3).contains(col) && (0..<3).contains(row) else { return nil }
         return row * 3 + col
     }
+
 }

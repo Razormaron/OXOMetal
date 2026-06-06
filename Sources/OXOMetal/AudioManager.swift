@@ -19,14 +19,18 @@ final class AudioManager {
     private func tone(freq: Float, dur: Float, amp: Float) {
         let rate   = Double(44100)
         let frames = AVAudioFrameCount(rate * Double(dur))
-        let fmt    = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 1)!
+        // Use the same format the engine settled on for this player node
+        let fmt    = engine.mainMixerNode.outputFormat(forBus: 0)
         guard let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: frames) else { return }
         buf.frameLength = frames
-        let data = buf.floatChannelData![0]
-        for i in 0..<Int(frames) {
-            let t = Float(i) / Float(rate)
-            let env = min(1.0, min(t * 40, (dur - t) * 40))   // fast attack/release
-            data[i] = sin(2 * .pi * freq * t) * amp * env
+        let nch = Int(fmt.channelCount)
+        for ch in 0..<nch {
+            let data = buf.floatChannelData![ch]
+            for i in 0..<Int(frames) {
+                let t = Float(i) / Float(rate)
+                let env = min(1.0, min(t * 40, (dur - t) * 40))
+                data[i] = sin(2 * .pi * freq * t) * amp * env
+            }
         }
         player.scheduleBuffer(buf, completionHandler: nil)
         if !player.isPlaying { player.play() }

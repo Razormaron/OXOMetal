@@ -108,9 +108,9 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.sampler = device.makeSamplerState(descriptor: sd)!
 
         // ── Buffers ────────────────────────────────────────────────────────
-        // Geometry: up to 8 192 vertices (9 O's × 32 segs × 3 layers × 6 verts ≈ 5 184)
+        // Geometry: up to 12 288 vertices (board marks + dial)
         self.geomBuffer = device.makeBuffer(
-            length: 8192 * MemoryLayout<Vertex>.stride,
+            length: 12288 * MemoryLayout<Vertex>.stride,
             options: .storageModeShared)!
 
         // CRT quad: two triangles covering the full NDC clip space
@@ -168,7 +168,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         var verts = UnsafeMutableBufferPointer<Vertex>(
             start: geomBuffer.contents().assumingMemoryBound(to: Vertex.self),
-            count: 8192)
+            count: 12288)
         var n = 0
         buildGeometry(gs, into: &verts, n: &n)
 
@@ -295,7 +295,7 @@ final class Renderer: NSObject, MTKViewDelegate {
                       _ width: Float, _ color: SIMD4<Float>) {
         let dx = x1 - x0, dy = y1 - y0
         let len = sqrt(dx * dx + dy * dy)
-        guard len > 0, n + 6 <= 8192 else { return }
+        guard len > 0, n + 6 <= 12288 else { return }
         let nx = -dy / len * (width * 0.5)
         let ny =  dx / len * (width * 0.5)
 
