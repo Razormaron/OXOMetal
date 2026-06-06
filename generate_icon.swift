@@ -16,13 +16,8 @@ func makeIcon(size: CGFloat) -> CGImage {
     ctx.translateBy(x: 0, y: size); ctx.scaleBy(x: 1, y: -1)
     let r = CGRect(x: 0, y: 0, width: size, height: size)
 
-    // ── Apple squircle clip (22.5% corner radius — matches App Store shape) ───
-    let cr = size * 0.225
-    let squircle = CGPath(roundedRect: r, cornerWidth: cr, cornerHeight: cr, transform: nil)
-    ctx.addPath(squircle)
-    ctx.clip()
-
     // ── Background: very dark, slightly warm ──────────────────────────────────
+    // Full square — macOS applies the squircle mask automatically in the Dock.
     ctx.setFillColor(CGColor(red: 0.08, green: 0.08, blue: 0.06, alpha: 1))
     ctx.fill(r)
 
