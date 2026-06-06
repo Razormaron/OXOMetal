@@ -23,14 +23,7 @@ func makeIcon(size: CGFloat) -> CGImage {
 
     let cx = size / 2, cy = size / 2
 
-    // The bezel fills the entire square so the icon has full visual weight.
-    // The phosphor circle sits inside, touching all four sides.
-    let bezelInset: CGFloat = 0
-    ctx.setFillColor(CGColor(red: 0.13, green: 0.14, blue: 0.10, alpha: 1))
-    ctx.fill(CGRect(x: bezelInset, y: bezelInset,
-                    width: size - bezelInset * 2, height: size - bezelInset * 2))
-
-    // Phosphor circle — radius just under half the icon so it nearly touches all edges
+    // Phosphor circle — fills the full icon square edge to edge
     let screenR: CGFloat = size * 0.47
 
     // ── Phosphor screen (dark + very faint ambient glow) ─────────────────────
