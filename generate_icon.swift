@@ -22,12 +22,16 @@ func makeIcon(size: CGFloat) -> CGImage {
     ctx.fill(r)
 
     let cx = size / 2, cy = size / 2
-    let screenR: CGFloat = size * 0.465  // fill the squircle — bezel touches the rounded edges
 
-    // ── CRT bezel (dark olive ring) ───────────────────────────────────────────
-    ctx.setFillColor(CGColor(red: 0.15, green: 0.16, blue: 0.11, alpha: 1))
-    ctx.fillEllipse(in: CGRect(x: cx - screenR - size * 0.02, y: cy - screenR - size * 0.02,
-                                width: (screenR + size * 0.02) * 2, height: (screenR + size * 0.02) * 2))
+    // The bezel fills the entire square so the icon has full visual weight.
+    // The phosphor circle sits inside, touching all four sides.
+    let bezelInset: CGFloat = 0
+    ctx.setFillColor(CGColor(red: 0.13, green: 0.14, blue: 0.10, alpha: 1))
+    ctx.fill(CGRect(x: bezelInset, y: bezelInset,
+                    width: size - bezelInset * 2, height: size - bezelInset * 2))
+
+    // Phosphor circle — radius just under half the icon so it nearly touches all edges
+    let screenR: CGFloat = size * 0.47
 
     // ── Phosphor screen (dark + very faint ambient glow) ─────────────────────
     ctx.setFillColor(CGColor(red: 0.01, green: 0.015, blue: 0.04, alpha: 1))
@@ -41,7 +45,7 @@ func makeIcon(size: CGFloat) -> CGImage {
     ctx.clip()
 
     // ── Dot-matrix board (11×11, dotSp ∝ size) ───────────────────────────────
-    let dotSp: CGFloat = size * 0.083
+    let dotSp: CGFloat = size * 0.088
     let dotR:  CGFloat = dotSp * 0.27
     let bx: CGFloat = cx - 5 * dotSp
     let by: CGFloat = cy - 5 * dotSp
