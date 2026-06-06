@@ -16,10 +16,8 @@ func makeIcon(size: CGFloat) -> CGImage {
     ctx.translateBy(x: 0, y: size); ctx.scaleBy(x: 1, y: -1)
     let r = CGRect(x: 0, y: 0, width: size, height: size)
 
-    // ── Background: very dark, slightly warm ──────────────────────────────────
-    // Full square — macOS applies the squircle mask automatically in the Dock.
-    ctx.setFillColor(CGColor(red: 0.08, green: 0.08, blue: 0.06, alpha: 1))
-    ctx.fill(r)
+    // Background is transparent — only the phosphor circle is opaque.
+    // macOS squircle-clips the icon in the Dock; transparent corners show through.
 
     let cx = size / 2, cy = size / 2
 
@@ -122,24 +120,30 @@ let dst  = CGImageDestinationCreateWithURL(dest as CFURL, "public.png" as CFStri
 CGImageDestinationAddImage(dst, img, nil)
 CGImageDestinationFinalize(dst)
 
-let sizes = [16, 32, 64, 128, 256, 512, 1024]
-let fm    = FileManager.default
+// Apple's required iconset filenames and their pixel sizes.
+// Name format: icon_<logical>x<logical>[@2x].png
+let iconsetSlots: [(name: String, px: Int)] = [
+    ("icon_16x16",        16),
+    ("icon_16x16@2x",     32),
+    ("icon_32x32",        32),
+    ("icon_32x32@2x",     64),
+    ("icon_128x128",     128),
+    ("icon_128x128@2x",  256),
+    ("icon_256x256",     256),
+    ("icon_256x256@2x",  512),
+    ("icon_512x512",     512),
+    ("icon_512x512@2x", 1024),
+]
+
+let fm = FileManager.default
 try? fm.createDirectory(atPath: "AppIcon.iconset", withIntermediateDirectories: true)
 
-for s in sizes {
+for slot in iconsetSlots {
     let task = Process()
     task.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-    task.arguments = ["-z", "\(s)", "\(s)", "icon_tmp.png",
-                      "--out", "AppIcon.iconset/icon_\(s)x\(s).png"]
+    task.arguments = ["-z", "\(slot.px)", "\(slot.px)", "icon_tmp.png",
+                      "--out", "AppIcon.iconset/\(slot.name).png"]
     try? task.run(); task.waitUntilExit()
-    if s <= 512 {
-        let s2 = s * 2
-        let task2 = Process()
-        task2.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-        task2.arguments = ["-z", "\(s2)", "\(s2)", "icon_tmp.png",
-                           "--out", "AppIcon.iconset/icon_\(s)x\(s)@2x.png"]
-        try? task2.run(); task2.waitUntilExit()
-    }
 }
 
 let iconutil = Process()
