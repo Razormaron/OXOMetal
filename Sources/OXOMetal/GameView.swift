@@ -70,15 +70,23 @@ final class GameView: MTKView {
 
     // MARK: Hit testing — grid
 
-    // Grid spans (170,170)–(530,530) in game coordinates; cells are 120×120.
-    private let gridX:  Float = 170
-    private let gridY:  Float = 170
-    private let cellSz: Float = 120
-
+    // Maps a click in game coords to a cell index using the 35×16 EDSAC dot grid.
+    // Board starts at (boardDC, boardDR) in grid coords; cells are 3 dots wide/tall
+    // with 1-dot dividers at offsets 3 and 7 within the board.
     private func cellAt(gx: Float, gy: Float) -> Int? {
-        let col = Int((gx - gridX) / cellSz)
-        let row = Int((gy - gridY) / cellSz)
-        guard (0..<3).contains(col) && (0..<3).contains(row) else { return nil }
+        let sp = Renderer.dotSp
+        let bx = Renderer.bx, by = Renderer.by
+
+        func axis(_ v: Float, origin: Float) -> Int? {
+            let d = (v - origin) / sp
+            guard d >= 0 && d < 11 else { return nil }
+            if d < 3.5 { return 0 }
+            if d < 7.5 { return 1 }
+            return 2
+        }
+
+        guard let col = axis(gx, origin: bx),
+              let row = axis(gy, origin: by) else { return nil }
         return row * 3 + col
     }
 

@@ -14,6 +14,9 @@ final class GameState {
     private var aiThinkTimer = 0
     private static let aiDelay = 42    // ~0.7 s at 60 fps
 
+    var playerScore = 0
+    var aiScore     = 0
+
     var soundMove = false
     var soundWin  = false
     var soundDraw = false
@@ -21,18 +24,19 @@ final class GameState {
     // MARK: Window title
 
     var windowTitle: String {
+        let score = "You \(playerScore) – \(aiScore) EDSAC"
         switch phase {
         case .waiting:
-            return "OXO  ·  Click a cell or use numpad 7-9 / 4-6 / 1-3  ·  Space to start"
+            return "OXO  ·  \(score)  ·  Space to start"
         case .playerTurn:
-            return "OXO  ·  Your move  (X)"
+            return "OXO  ·  \(score)  ·  Your move (O)"
         case .aiThinking:
-            return "OXO  ·  EDSAC is thinking…"
+            return "OXO  ·  \(score)  ·  Thinking…"
         case .over:
             switch outcome {
-            case .playerWins: return "OXO  ·  YOU WIN!  Space to play again"
-            case .aiWins:     return "OXO  ·  EDSAC WINS!  Space to play again"
-            case .draw:       return "OXO  ·  DRAW  ·  Space to play again"
+            case .playerWins: return "OXO  ·  \(score)  ·  YOU WIN!  Space to play again"
+            case .aiWins:     return "OXO  ·  \(score)  ·  EDSAC WINS!  Space to play again"
+            case .draw:       return "OXO  ·  \(score)  ·  DRAW  ·  Space to play again"
             case .none:       return "OXO"
             }
         }
@@ -46,7 +50,7 @@ final class GameState {
 
     func playerMove(cell: Int) {
         guard phase == .playerTurn, board[cell] == .empty else { return }
-        board[cell] = .x
+        board[cell] = .o
         soundMove   = true
         if let result = checkResult() {
             endGame(result)
@@ -73,7 +77,7 @@ final class GameState {
 
     private func performAIMove() {
         guard let move = bestMove() else { return }
-        board[move] = .o
+        board[move] = .x
         soundMove   = true
         if let result = checkResult() {
             endGame(result)
@@ -88,6 +92,7 @@ final class GameState {
         if result == .playerWins || result == .aiWins {
             winLine  = findWinLine(in: board)
             soundWin = true
+            if result == .playerWins { playerScore += 1 } else { aiScore += 1 }
         } else {
             soundDraw = true
         }
@@ -95,7 +100,7 @@ final class GameState {
 
     private func checkResult() -> Outcome? {
         if let line = findWinLine(in: board) {
-            return board[line[0]] == .x ? .playerWins : .aiWins
+            return board[line[0]] == .o ? .playerWins : .aiWins
         }
         if board.allSatisfy({ $0 != .empty }) { return .draw }
         return nil
@@ -107,7 +112,7 @@ final class GameState {
         var bestScore = Int.min
         var bestIdx   = -1
         for i in 0..<9 where board[i] == .empty {
-            var b = board; b[i] = .o
+            var b = board; b[i] = .x
             let score = minimax(board: b, depth: 1, isMaximizing: false)
             if score > bestScore { bestScore = score; bestIdx = i }
         }
@@ -116,21 +121,21 @@ final class GameState {
 
     private func minimax(board: [Cell], depth: Int, isMaximizing: Bool) -> Int {
         if let line = findWinLine(in: board) {
-            return board[line[0]] == .o ? (10 - depth) : (depth - 10)
+            return board[line[0]] == .x ? (10 - depth) : (depth - 10)
         }
         if board.allSatisfy({ $0 != .empty }) { return 0 }
 
         if isMaximizing {
             var best = Int.min
             for i in 0..<9 where board[i] == .empty {
-                var b = board; b[i] = .o
+                var b = board; b[i] = .x
                 best = max(best, minimax(board: b, depth: depth + 1, isMaximizing: false))
             }
             return best
         } else {
             var best = Int.max
             for i in 0..<9 where board[i] == .empty {
-                var b = board; b[i] = .x
+                var b = board; b[i] = .o
                 best = min(best, minimax(board: b, depth: depth + 1, isMaximizing: true))
             }
             return best

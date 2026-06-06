@@ -55,39 +55,46 @@ fragment float4 fragment_crt(CRTVertexOut   in   [[stage_in]],
                               sampler          smp [[sampler(0)]]) {
     float2 uv = in.uv;
 
-    // Map uv to [-1, 1] centred coordinates
-    float2 cc = uv * 2.0 - 1.0;
+    float2 cc = uv * 2.0 - 1.0;   // [-1, 1] centred
 
-    // Barrel distortion — pushes edges outward, crops corners like a CRT tube
-    float r2   = dot(cc, cc);
-    float2 dcc = cc * (1.0 + 0.16 * r2);
-    float2 dUV = dcc * 0.5 + 0.5;
+    // ── Circular CRT tube boundary (round oscilloscope screen) ───────────────
+    float screenR = length(cc);
+    const float boundary = 0.84;
 
-    // Outside the distorted screen boundary → render the machine bezel
-    if (dUV.x < 0.0 || dUV.x > 1.0 || dUV.y < 0.0 || dUV.y > 1.0) {
-        // Dark olive/grey casing, slightly lighter toward centre of bezel
-        float3 bezel = float3(0.10, 0.11, 0.085);
-        float  lit   = 1.0 - saturate(dot(cc * 0.55, cc * 0.55));
-        bezel *= (0.75 + 0.25 * lit);
-        // Faint green bleed from the phosphor screen on the surrounding bezel
-        float bleed = exp(-r2 * 3.5) * 0.06;
-        bezel += float3(0.0, bleed, bleed * 0.3);
+    if (screenR > boundary) {
+        // Dark machine casing
+        float3 bezel = float3(0.095, 0.100, 0.075);
+        float  lit   = max(0.0, 1.0 - (screenR - boundary) * 5.0);
+        bezel *= (0.65 + 0.35 * lit);
+        // Faint blue-white bleed from phosphor screen onto bezel
+        float bleed = exp(-(screenR - boundary) * (screenR - boundary) * 80.0) * 0.05;
+        bezel += float3(bleed * 0.5, bleed * 0.7, bleed);
         return float4(bezel, 1.0);
     }
 
+    // ── Barrel distortion inside screen ──────────────────────────────────────
+    float r2   = dot(cc, cc);
+    float2 dcc = cc * (1.0 + 0.10 * r2);
+    float2 dUV = clamp(dcc * 0.5 + 0.5, 0.001, 0.999);
+
     float4 col = tex.sample(smp, dUV);
 
-    // Scanlines — darken alternating pixel rows (sin is ±1 at half-integer y)
-    float scan = 0.82 + 0.18 * sin(in.position.y * 3.14159265);
+    // Phosphor ambient — faint blue tint in dark areas (tube never fully dark)
+    float darkness = 1.0 - saturate(col.r * 0.3 + col.g * 0.5 + col.b * 0.2);
+    col.rgb += float3(0.0008, 0.0015, 0.006) * darkness;
+
+    // Scanlines
+    float scan = 0.87 + 0.13 * sin(in.position.y * 3.14159265);
     col.rgb *= scan;
 
-    // Vignette — edges of the phosphor screen fade to black
-    float vig = 1.0 - saturate(dot(dcc * 0.80, dcc * 0.80));
-    col.rgb  *= max(vig, 0.05);
+    // Vignette (round-tube feel — edges fade strongly)
+    float normR = screenR / boundary;
+    float vig   = 1.0 - pow(normR, 2.2) * 0.65;
+    col.rgb    *= max(vig, 0.06);
 
-    // Inner screen-edge glow — thin bright ring at the rim of the CRT tube
-    float rim = saturate(1.0 - (length(dcc) - 0.88) / 0.12);
-    col.rgb  += float3(0.0, 0.03, 0.01) * (1.0 - rim);
+    // Blue-white rim glow at screen edge
+    float rim = exp(-pow(screenR - boundary * 0.965, 2.0) * 900.0);
+    col.rgb  += float3(0.03, 0.05, 0.14) * rim;
 
     return float4(col.rgb, 1.0);
 }
